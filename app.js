@@ -3,7 +3,7 @@ const CLIENT_ID = '864b8ff54f774761bbf08c5cf36c761e'; // Replace with your Spoti
 // Auto-detect if we're running locally or on GitHub Pages
 const REDIRECT_URI = window.location.hostname === '127.0.0.1' 
     ? 'http://127.0.0.1:3000/index.html' 
-    : 'https://antoniochieffallo.github.io/Spotify-Song-Display/index.html'; // Update with your GitHub Pages URL
+    : 'https://antoniochieffallo.github.io/Spotify-Song-Display/'; // Update with your GitHub Pages URL
 const SCOPES = 'user-read-currently-playing user-read-playback-state';
 
 // DOM Elements
