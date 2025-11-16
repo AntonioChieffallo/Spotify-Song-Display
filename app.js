@@ -53,6 +53,13 @@ async function exchangeCodeForToken(code) {
     console.log('Code:', code.substring(0, 20) + '...');
     console.log('Code verifier:', codeVerifier ? codeVerifier.substring(0, 20) + '...' : 'MISSING!');
     
+    if (!codeVerifier) {
+        console.error('Code verifier missing! This means the auth flow was interrupted.');
+        alert('Authentication flow was interrupted. Please try connecting again.');
+        localStorage.clear(); // Clear any stale data
+        return false;
+    }
+    
     try {
         const response = await fetch('https://accounts.spotify.com/api/token', {
             method: 'POST',
@@ -80,11 +87,13 @@ async function exchangeCodeForToken(code) {
             return true;
         } else {
             console.error('Failed to get access token:', data);
+            localStorage.clear(); // Clear stale data to prevent loops
             alert('Token exchange failed: ' + (data.error_description || data.error || 'Unknown error'));
             return false;
         }
     } catch (error) {
         console.error('Error during token exchange:', error);
+        localStorage.clear(); // Clear stale data to prevent loops
         alert('Network error during token exchange: ' + error.message);
         return false;
     }
