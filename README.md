@@ -9,6 +9,7 @@ To use this application in OBS:
 5. Uncheck "Shutdown source when not visible"  
 6. Check "Refresh browser when scene becomes active"  
 7. Click "OK"  
-8. Right-click the source → "Interact" → Click "Connect to Spotify" → Authorize  
+8. Right-click the source → "Interact" → Click "Connect to Spotify" → Authorize (resize the interaction screen if need be)
 9. Close the interaction window  
 10. Adjust position on your display and enjoy!
+
