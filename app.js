@@ -1,9 +1,7 @@
 // Spotify API Configuration
 const CLIENT_ID = '864b8ff54f774761bbf08c5cf36c761e'; // Replace with your Spotify Client ID
-// Auto-detect if we're running locally or on GitHub Pages
-const REDIRECT_URI = window.location.hostname === '127.0.0.1' 
-    ? 'http://127.0.0.1:3000/index.html' 
-    : 'https://antoniochieffallo.github.io/Spotify-Song-Display/'; // Update with your GitHub Pages URL
+// Auto-detect if we're running locally or on GitHub Pages - use current URL
+const REDIRECT_URI = window.location.origin + window.location.pathname;
 const SCOPES = 'user-read-currently-playing user-read-playback-state';
 
 // DOM Elements
