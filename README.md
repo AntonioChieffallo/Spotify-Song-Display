@@ -1,12 +1,14 @@
 ﻿# Spotify Now Playing Widget
 
-To use this application in OBS
+To use this application in OBS:
 
-1.) Open obs
-2.) Go to "sources" and add a "browser"
-3.) Copy https://antoniochieffallo.github.io/Spotify-Thingy/index.html into the URL
-4.) Make WIDTH "600" and HEIGHT "200"
-5.) Enable "Shutdown source when not visible"
-6.) Enable "Refresh Browser when scene becomes active"
-7.) Click "ok"
-8.) Adjust on your display and enjoy!
+1. Open OBS  
+2. Go to "Sources" and add a "Browser"  
+3. Copy `https://antoniochieffallo.github.io/Spotify-Thingy/index.html` into the URL  
+4. Set WIDTH to `600` and HEIGHT to `200`  
+5. Uncheck "Shutdown source when not visible"  
+6. Check "Refresh browser when scene becomes active"  
+7. Click "OK"  
+8. Right-click the source → "Interact" → Click "Connect to Spotify" → Authorize  
+9. Close the interaction window  
+10. Adjust position on your display and enjoy!
