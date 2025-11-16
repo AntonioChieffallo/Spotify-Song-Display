@@ -12,4 +12,3 @@ To use this application in OBS:
 8. Right-click the source → "Interact" → Click "Connect to Spotify" → Authorize (resize the interaction screen if need be)
 9. Close the interaction window  
 10. Adjust position on your display and enjoy!
-
