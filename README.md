@@ -12,6 +12,10 @@ A real-time Spotify now playing display for Twitch streams and OBS overlays. Sho
 - ✨ Smooth animations and modern design
 - 🎮 Easy integration with OBS/Twitch
 
+## Quick Demo
+
+Want to see how it looks? Open `demo.html` in your browser to see a demo with sample songs that rotate automatically. This doesn't require any Spotify authentication and is perfect for testing your OBS setup.
+
 ## Setup Instructions
 
 ### 1. Create a Spotify Application
