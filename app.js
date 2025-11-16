@@ -219,8 +219,9 @@ async function getCurrentlyPlaying() {
             }
         });
 
-        if (response.status === 401) {
-            // Token expired
+        if (response.status === 401 || response.status === 403) {
+            // Token expired or invalid - trigger reconnect
+            console.log('Token invalid, showing reconnect button...');
             localStorage.removeItem('spotify_access_token');
             accessToken = null;
             stopPolling();
@@ -244,7 +245,32 @@ async function getCurrentlyPlaying() {
         }
     } catch (error) {
         console.error('Error fetching currently playing:', error);
+        // On network error, try to reconnect after a few attempts
+        handleNetworkError();
     }
+}
+
+// Handle network errors with reconnect logic
+let errorCount = 0;
+function handleNetworkError() {
+    errorCount++;
+    console.log(`Network error count: ${errorCount}`);
+    
+    if (errorCount >= 3) {
+        // After 3 consecutive errors, show reconnect button
+        console.log('Multiple errors detected, requiring reconnect...');
+        localStorage.removeItem('spotify_access_token');
+        accessToken = null;
+        stopPolling();
+        showLoginButton();
+        updateDisplay(null);
+        errorCount = 0; // Reset counter
+    }
+}
+
+// Reset error count on successful fetch
+function resetErrorCount() {
+    errorCount = 0;
 }
 
 // Update display with track information
@@ -261,6 +287,9 @@ function updateDisplay(track, progress = 0, playing = false) {
         durationEl.textContent = '0:00';
         return;
     }
+
+    // Reset error count on successful data
+    resetErrorCount();
 
     // Update progress state
     trackProgress = progress;
