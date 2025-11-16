@@ -115,17 +115,18 @@ async function init() {
         console.log('Authorization code found in URL');
         const code = params.get('code');
         
+        // Clean up URL FIRST to prevent re-processing the code
+        window.history.replaceState({}, document.title, window.location.pathname);
+        
         // Exchange code for token
         const success = await exchangeCodeForToken(code);
         
-        // Clean up URL
-        window.history.replaceState({}, document.title, window.location.pathname);
-        
         if (success) {
+            console.log('Token exchange successful, showing now playing');
             showNowPlaying();
             startPolling();
         } else {
-            alert('Failed to authenticate with Spotify');
+            console.error('Token exchange failed, showing login button');
             showLoginButton();
         }
     } else {
