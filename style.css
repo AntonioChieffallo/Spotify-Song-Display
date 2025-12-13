@@ -58,7 +58,7 @@ body {
 .song-info {
     flex: 1;
     margin-left: 20px;
-    overflow: hidden;
+    overflow: visible;
 }
 
 .song-title {
@@ -69,6 +69,7 @@ body {
     overflow: hidden;
     text-overflow: ellipsis;
     color: #1DB954;
+    max-width: 100%;
 }
 
 .artist-name {
@@ -78,6 +79,7 @@ body {
     overflow: hidden;
     text-overflow: ellipsis;
     margin-bottom: 12px;
+    max-width: 100%;
 }
 
 .progress-container {
@@ -150,6 +152,7 @@ body {
     justify-content: center;
     gap: 16px;
     margin-top: 16px;
+    overflow: visible;
 }
 
 .control-btn {
@@ -185,7 +188,7 @@ body {
     }
     50% {
         transform: scale(1.1);
-        box-shadow: 0 0 0 10px rgba(29, 185, 84, 0);
+        box-shadow: 0 0 0 8px rgba(29, 185, 84, 0);
     }
     100% {
         transform: scale(1);
