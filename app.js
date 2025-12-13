@@ -512,8 +512,8 @@ function startPolling() {
     // Initial fetch
     getCurrentlyPlaying();
     
-    // Poll every 5 seconds for track updates
-    refreshInterval = setInterval(getCurrentlyPlaying, 5000);
+    // Poll every second for near-instant track updates
+    refreshInterval = setInterval(getCurrentlyPlaying, 1000);
     
     // Update progress bar every 100ms for smooth animation
     progressInterval = setInterval(updateProgressBar, 100);
