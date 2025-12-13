@@ -481,24 +481,21 @@ function updateDisplay(track, progress = 0, playing = false, context = null) {
             songInfo.classList.add('slide-in-right');
             setTimeout(() => {
                 songInfo.classList.remove('slide-in-right');
+                skipDirection = null;
             }, 300);
         } else if (skipDirection === 'prev') {
             songInfo.classList.add('slide-in-left');
             setTimeout(() => {
                 songInfo.classList.remove('slide-in-left');
+                skipDirection = null;
             }, 300);
         } else {
-            // Default fade-in for natural song changes
+            // Default fade-in for natural song changes (when song ends naturally)
             songInfo.classList.add('updating');
             setTimeout(() => {
                 songInfo.classList.remove('updating');
             }, 500);
         }
-        
-        // Reset skip direction after animation is applied
-        setTimeout(() => {
-            skipDirection = null;
-        }, 300);
 
         // Update song information
         songTitle.textContent = track.name;
