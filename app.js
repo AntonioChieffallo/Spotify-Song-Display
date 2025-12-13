@@ -32,7 +32,8 @@ let isPlaying = false;
 let skipDirection = null; // 'next' or 'prev'
 let previousTrackId = null;
 let previousIsPlaying = false;
-let lastTrackChangeTime = 0;
+let previousTrackProgress = 0;
+let previousTrackDuration = 0;
 
 // PKCE Helper Functions
 function generateRandomString(length) {
@@ -427,6 +428,12 @@ function updateDisplay(track, progress = 0, playing = false) {
         pulseButton(playPauseBtn);
     }
 
+    // Store previous track state before updating
+    if (currentTrackId) {
+        previousTrackProgress = trackProgress;
+        previousTrackDuration = trackDuration;
+    }
+    
     // Update progress state
     trackProgress = progress;
     trackDuration = track.duration_ms;
@@ -450,26 +457,22 @@ function updateDisplay(track, progress = 0, playing = false) {
         // Detect if track changed externally (not from our buttons)
         if (currentTrackId && !skipDirection) {
             // Track changed but we didn't press a button - external skip
-            const now = Date.now();
-            const timeSinceLastChange = now - lastTrackChangeTime;
+            // Better direction detection: check if previous track was near the end
+            const previousTrackTimeRemaining = previousTrackDuration - previousTrackProgress;
             
-            // Improved direction detection:
-            // If track changed quickly (< 2 seconds) from last change, likely rapid skipping
-            // Otherwise, use progress to determine direction
-            if (timeSinceLastChange < 2000) {
-                // Rapid change - maintain current direction or default to next
-                skipDirection = skipDirection || 'next';
+            if (previousTrackTimeRemaining < 3000 && isPlaying) {
+                // Previous track was almost done and playing - natural progression to next
+                skipDirection = 'next';
+                pulseButton(nextBtn);
             } else if (progress < 5000) {
-                // Less than 5 seconds into new track - likely skipped forward
+                // New track just started (< 5 sec in) and old track wasn't ending - likely skipped forward
                 skipDirection = 'next';
                 pulseButton(nextBtn);
             } else {
-                // Further into track - likely went to previous
+                // Further into new track - likely went backwards or resumed from middle
                 skipDirection = 'prev';
                 pulseButton(prevBtn);
             }
-            
-            lastTrackChangeTime = now;
         }
         
         previousTrackId = track.id;
