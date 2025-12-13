@@ -45,6 +45,62 @@ function base64encode(input) {
         .replace(/\//g, '_');
 }
 
+// Refresh access token using refresh token
+async function refreshAccessToken() {
+    const refreshToken = localStorage.getItem('spotify_refresh_token');
+    
+    if (!refreshToken) {
+        console.log('No refresh token available');
+        return false;
+    }
+    
+    console.log('Refreshing access token...');
+    
+    try {
+        const response = await fetch('https://accounts.spotify.com/api/token', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: new URLSearchParams({
+                client_id: CLIENT_ID,
+                grant_type: 'refresh_token',
+                refresh_token: refreshToken,
+            }),
+        });
+        
+        const data = await response.json();
+        
+        if (data.access_token) {
+            accessToken = data.access_token;
+            localStorage.setItem('spotify_access_token', accessToken);
+            
+            // Update refresh token if a new one is provided
+            if (data.refresh_token) {
+                localStorage.setItem('spotify_refresh_token', data.refresh_token);
+            }
+            
+            // Update token expiry time
+            const expiresIn = data.expires_in || 3600;
+            const expiryTime = Date.now() + (expiresIn * 1000);
+            localStorage.setItem('spotify_token_expiry', expiryTime.toString());
+            
+            console.log('Access token refreshed successfully');
+            return true;
+        } else {
+            console.error('Failed to refresh token:', data);
+            // Clear all tokens if refresh fails
+            localStorage.removeItem('spotify_access_token');
+            localStorage.removeItem('spotify_refresh_token');
+            localStorage.removeItem('spotify_token_expiry');
+            return false;
+        }
+    } catch (error) {
+        console.error('Error refreshing token:', error);
+        return false;
+    }
+}
+
 // Exchange authorization code for access token
 async function exchangeCodeForToken(code) {
     const codeVerifier = localStorage.getItem('code_verifier');
@@ -82,6 +138,18 @@ async function exchangeCodeForToken(code) {
         if (data.access_token) {
             accessToken = data.access_token;
             localStorage.setItem('spotify_access_token', accessToken);
+            
+            // Store refresh token for automatic token renewal
+            if (data.refresh_token) {
+                localStorage.setItem('spotify_refresh_token', data.refresh_token);
+                console.log('Refresh token stored');
+            }
+            
+            // Store token expiry time
+            const expiresIn = data.expires_in || 3600; // Default 1 hour
+            const expiryTime = Date.now() + (expiresIn * 1000);
+            localStorage.setItem('spotify_token_expiry', expiryTime.toString());
+            
             localStorage.removeItem('code_verifier');
             console.log('Access token obtained successfully');
             return true;
@@ -141,11 +209,45 @@ async function init() {
     } else {
         // Check if we have a stored token
         const storedToken = localStorage.getItem('spotify_access_token');
+        const tokenExpiry = localStorage.getItem('spotify_token_expiry');
+        const refreshToken = localStorage.getItem('spotify_refresh_token');
+        
         if (storedToken) {
-            console.log('Stored token found');
-            accessToken = storedToken;
-            showNowPlaying();
-            startPolling();
+            // Check if token is expired or about to expire (within 5 minutes)
+            const now = Date.now();
+            const expiry = tokenExpiry ? parseInt(tokenExpiry) : 0;
+            
+            if (expiry > 0 && now >= expiry - (5 * 60 * 1000)) {
+                console.log('Token expired or expiring soon, attempting refresh...');
+                const refreshed = await refreshAccessToken();
+                if (refreshed) {
+                    console.log('Token refreshed, showing now playing');
+                    showNowPlaying();
+                    startPolling();
+                } else if (refreshToken) {
+                    console.log('Refresh failed but have refresh token, showing login button');
+                    showLoginButton();
+                } else {
+                    console.log('No refresh token, showing login button');
+                    showLoginButton();
+                }
+            } else {
+                console.log('Stored token found and valid');
+                accessToken = storedToken;
+                showNowPlaying();
+                startPolling();
+            }
+        } else if (refreshToken) {
+            // Have refresh token but no access token - try to refresh
+            console.log('No access token but refresh token found, attempting refresh...');
+            const refreshed = await refreshAccessToken();
+            if (refreshed) {
+                showNowPlaying();
+                startPolling();
+            } else {
+                console.log('Refresh failed, showing login button');
+                showLoginButton();
+            }
         } else {
             console.log('No token found, showing login button');
             showLoginButton();
@@ -228,14 +330,27 @@ async function getCurrentlyPlaying() {
         });
 
         if (response.status === 401 || response.status === 403) {
-            // Token expired or invalid - trigger reconnect
-            console.log('Token invalid, showing reconnect button...');
-            localStorage.removeItem('spotify_access_token');
-            accessToken = null;
-            stopPolling();
-            showLoginButton();
-            updateDisplay(null);
-            return;
+            // Token expired or invalid - try to refresh
+            console.log('Token invalid, attempting refresh...');
+            const refreshed = await refreshAccessToken();
+            
+            if (refreshed) {
+                console.log('Token refreshed, retrying request...');
+                // Retry the request with new token
+                getCurrentlyPlaying();
+                return;
+            } else {
+                // Refresh failed - trigger reconnect
+                console.log('Token refresh failed, showing reconnect button...');
+                localStorage.removeItem('spotify_access_token');
+                localStorage.removeItem('spotify_refresh_token');
+                localStorage.removeItem('spotify_token_expiry');
+                accessToken = null;
+                stopPolling();
+                showLoginButton();
+                updateDisplay(null);
+                return;
+            }
         }
 
         if (response.status === 204 || !response.ok) {
