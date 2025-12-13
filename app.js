@@ -29,6 +29,9 @@ let trackDuration = 0;
 let trackProgress = 0;
 let lastUpdateTime = 0;
 let isPlaying = false;
+let skipDirection = null; // 'next' or 'prev'
+let previousTrackId = null;
+let previousIsPlaying = false;
 
 // PKCE Helper Functions
 function generateRandomString(length) {
@@ -367,7 +370,7 @@ async function getCurrentlyPlaying() {
         const data = await response.json();
         
         if (data && data.item) {
-            updateDisplay(data.item, data.progress_ms, data.is_playing);
+            updateDisplay(data.item, data.progress_ms, data.is_playing, data.context);
         } else {
             updateDisplay(null);
         }
@@ -402,14 +405,16 @@ function resetErrorCount() {
 }
 
 // Update display with track information
-function updateDisplay(track, progress = 0, playing = false) {
+function updateDisplay(track, progress = 0, playing = false, context = null) {
     if (!track) {
         songTitle.textContent = 'Not Playing';
         artistName.textContent = 'No active playback';
         coverImage.src = '';
         coverImage.alt = '';
         currentTrackId = null;
+        previousTrackId = null;
         isPlaying = false;
+        previousIsPlaying = false;
         progressFill.style.width = '0%';
         currentTimeEl.textContent = '0:00';
         durationEl.textContent = '0:00';
@@ -418,12 +423,20 @@ function updateDisplay(track, progress = 0, playing = false) {
 
     // Reset error count on successful data
     resetErrorCount();
+    
+    // Detect external play/pause changes
+    if (previousTrackId === track.id && previousIsPlaying !== playing) {
+        // Same track, but playback state changed externally
+        playPauseBtn.classList.add('pulse');
+        setTimeout(() => playPauseBtn.classList.remove('pulse'), 400);
+    }
 
     // Update progress state
     trackProgress = progress;
     trackDuration = track.duration_ms;
     lastUpdateTime = Date.now();
     isPlaying = playing;
+    previousIsPlaying = playing;
     
     // Update play/pause icon
     updatePlayPauseIcon();
@@ -438,13 +451,54 @@ function updateDisplay(track, progress = 0, playing = false) {
 
     // Only update if the track has changed
     if (track.id !== currentTrackId) {
+        // Detect if track changed externally (not from our buttons)
+        if (currentTrackId && !skipDirection) {
+            // Track changed but we didn't press a button - external skip
+            // Determine direction by comparing progress - if near start, likely skipped forward
+            if (progress < 3000) {
+                // Less than 3 seconds into new track - likely skipped forward
+                skipDirection = 'next';
+                nextBtn.classList.add('pulse');
+                setTimeout(() => nextBtn.classList.remove('pulse'), 400);
+            } else {
+                // Further into track - could be previous or just started playing
+                skipDirection = 'prev';
+                prevBtn.classList.add('pulse');
+                setTimeout(() => prevBtn.classList.remove('pulse'), 400);
+            }
+        }
+        
+        previousTrackId = track.id;
         currentTrackId = track.id;
         
-        // Add animation class
-        document.querySelector('.song-info').classList.add('updating');
+        const songInfo = document.querySelector('.song-info');
+        
+        // Remove all animation classes first
+        songInfo.classList.remove('updating', 'slide-out-left', 'slide-out-right', 'slide-in-left', 'slide-in-right');
+        
+        // Apply appropriate animation based on skip direction
+        if (skipDirection === 'next') {
+            songInfo.classList.add('slide-in-right');
+            setTimeout(() => {
+                songInfo.classList.remove('slide-in-right');
+            }, 300);
+        } else if (skipDirection === 'prev') {
+            songInfo.classList.add('slide-in-left');
+            setTimeout(() => {
+                songInfo.classList.remove('slide-in-left');
+            }, 300);
+        } else {
+            // Default fade-in for natural song changes
+            songInfo.classList.add('updating');
+            setTimeout(() => {
+                songInfo.classList.remove('updating');
+            }, 500);
+        }
+        
+        // Reset skip direction after animation is applied
         setTimeout(() => {
-            document.querySelector('.song-info').classList.remove('updating');
-        }, 500);
+            skipDirection = null;
+        }, 300);
 
         // Update song information
         songTitle.textContent = track.name;
@@ -504,6 +558,11 @@ async function skipToNext() {
             nextBtn.classList.add('pulse');
             setTimeout(() => nextBtn.classList.remove('pulse'), 400);
             
+            // Set skip direction and trigger slide animation
+            skipDirection = 'next';
+            const songInfo = document.querySelector('.song-info');
+            songInfo.classList.add('slide-out-left');
+            
             // Immediately refresh to show new track
             setTimeout(() => getCurrentlyPlaying(), 300);
         }
@@ -527,6 +586,11 @@ async function skipToPrevious() {
             // Add pulse animation
             prevBtn.classList.add('pulse');
             setTimeout(() => prevBtn.classList.remove('pulse'), 400);
+            
+            // Set skip direction and trigger slide animation
+            skipDirection = 'prev';
+            const songInfo = document.querySelector('.song-info');
+            songInfo.classList.add('slide-out-right');
             
             // Immediately refresh to show new track
             setTimeout(() => getCurrentlyPlaying(), 300);
