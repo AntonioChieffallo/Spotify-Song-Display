@@ -32,6 +32,7 @@ let isPlaying = false;
 let skipDirection = null; // 'next' or 'prev'
 let previousTrackId = null;
 let previousIsPlaying = false;
+let lastTrackChangeTime = 0;
 
 // PKCE Helper Functions
 function generateRandomString(length) {
@@ -449,16 +450,26 @@ function updateDisplay(track, progress = 0, playing = false) {
         // Detect if track changed externally (not from our buttons)
         if (currentTrackId && !skipDirection) {
             // Track changed but we didn't press a button - external skip
-            // Determine direction by comparing progress - if near start, likely skipped forward
-            if (progress < 3000) {
-                // Less than 3 seconds into new track - likely skipped forward
+            const now = Date.now();
+            const timeSinceLastChange = now - lastTrackChangeTime;
+            
+            // Improved direction detection:
+            // If track changed quickly (< 2 seconds) from last change, likely rapid skipping
+            // Otherwise, use progress to determine direction
+            if (timeSinceLastChange < 2000) {
+                // Rapid change - maintain current direction or default to next
+                skipDirection = skipDirection || 'next';
+            } else if (progress < 5000) {
+                // Less than 5 seconds into new track - likely skipped forward
                 skipDirection = 'next';
                 pulseButton(nextBtn);
             } else {
-                // Further into track - could be previous or just started playing
+                // Further into track - likely went to previous
                 skipDirection = 'prev';
                 pulseButton(prevBtn);
             }
+            
+            lastTrackChangeTime = now;
         }
         
         previousTrackId = track.id;
