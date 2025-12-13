@@ -144,6 +144,60 @@ body {
     transform: scale(0.98);
 }
 
+/* Control buttons */
+.controls {
+    display: flex;
+    justify-content: center;
+    gap: 16px;
+    margin-top: 16px;
+}
+
+.control-btn {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    color: #fff;
+    padding: 0;
+}
+
+.control-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+    border-color: rgba(255, 255, 255, 0.3);
+    transform: scale(1.05);
+}
+
+.control-btn:active {
+    transform: scale(0.95);
+}
+
+/* Button click animations */
+@keyframes btnPulse {
+    0% {
+        transform: scale(1);
+        box-shadow: 0 0 0 0 rgba(29, 185, 84, 0.7);
+    }
+    50% {
+        transform: scale(1.1);
+        box-shadow: 0 0 0 10px rgba(29, 185, 84, 0);
+    }
+    100% {
+        transform: scale(1);
+        box-shadow: 0 0 0 0 rgba(29, 185, 84, 0);
+    }
+}
+
+.control-btn.pulse {
+    animation: btnPulse 0.4s ease;
+    background: rgba(29, 185, 84, 0.3);
+}
+
 /* Animation for song changes */
 @keyframes fadeIn {
     from {

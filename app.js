@@ -2,7 +2,7 @@
 const CLIENT_ID = '864b8ff54f774761bbf08c5cf36c761e'; // Replace with your Spotify Client ID
 // Auto-detect if we're running locally or on GitHub Pages - use current URL
 const REDIRECT_URI = window.location.origin + window.location.pathname;
-const SCOPES = 'user-read-currently-playing user-read-playback-state';
+const SCOPES = 'user-read-currently-playing user-read-playback-state user-modify-playback-state';
 
 // DOM Elements
 const loginButton = document.getElementById('loginButton');
@@ -14,6 +14,11 @@ const artistName = document.getElementById('artistName');
 const progressFill = document.getElementById('progressFill');
 const currentTimeEl = document.getElementById('currentTime');
 const durationEl = document.getElementById('duration');
+const prevBtn = document.getElementById('prevBtn');
+const playPauseBtn = document.getElementById('playPauseBtn');
+const nextBtn = document.getElementById('nextBtn');
+const playIcon = document.getElementById('playIcon');
+const pauseIcon = document.getElementById('pauseIcon');
 
 // State
 let accessToken = null;
@@ -420,6 +425,9 @@ function updateDisplay(track, progress = 0, playing = false) {
     lastUpdateTime = Date.now();
     isPlaying = playing;
     
+    // Update play/pause icon
+    updatePlayPauseIcon();
+    
     // Update duration display
     durationEl.textContent = formatTime(trackDuration);
     
@@ -478,6 +486,103 @@ function stopPolling() {
         progressInterval = null;
     }
 }
+
+// Playback control functions
+async function skipToNext() {
+    if (!accessToken) return;
+    
+    try {
+        const response = await fetch('https://api.spotify.com/v1/me/player/next', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${accessToken}`
+            }
+        });
+        
+        if (response.ok || response.status === 204) {
+            // Add pulse animation
+            nextBtn.classList.add('pulse');
+            setTimeout(() => nextBtn.classList.remove('pulse'), 400);
+            
+            // Immediately refresh to show new track
+            setTimeout(() => getCurrentlyPlaying(), 300);
+        }
+    } catch (error) {
+        console.error('Error skipping track:', error);
+    }
+}
+
+async function skipToPrevious() {
+    if (!accessToken) return;
+    
+    try {
+        const response = await fetch('https://api.spotify.com/v1/me/player/previous', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${accessToken}`
+            }
+        });
+        
+        if (response.ok || response.status === 204) {
+            // Add pulse animation
+            prevBtn.classList.add('pulse');
+            setTimeout(() => prevBtn.classList.remove('pulse'), 400);
+            
+            // Immediately refresh to show new track
+            setTimeout(() => getCurrentlyPlaying(), 300);
+        }
+    } catch (error) {
+        console.error('Error going to previous track:', error);
+    }
+}
+
+async function togglePlayPause() {
+    if (!accessToken) return;
+    
+    try {
+        const endpoint = isPlaying 
+            ? 'https://api.spotify.com/v1/me/player/pause'
+            : 'https://api.spotify.com/v1/me/player/play';
+        
+        const response = await fetch(endpoint, {
+            method: 'PUT',
+            headers: {
+                'Authorization': `Bearer ${accessToken}`
+            }
+        });
+        
+        if (response.ok || response.status === 204) {
+            // Add pulse animation
+            playPauseBtn.classList.add('pulse');
+            setTimeout(() => playPauseBtn.classList.remove('pulse'), 400);
+            
+            // Toggle play state and icon
+            isPlaying = !isPlaying;
+            updatePlayPauseIcon();
+            
+            // Immediately refresh
+            setTimeout(() => getCurrentlyPlaying(), 300);
+        }
+    } catch (error) {
+        console.error('Error toggling playback:', error);
+    }
+}
+
+// Update play/pause icon based on playback state
+function updatePlayPauseIcon() {
+    if (isPlaying) {
+        playIcon.style.display = 'none';
+        pauseIcon.style.display = 'block';
+    } else {
+        playIcon.style.display = 'block';
+        pauseIcon.style.display = 'none';
+    }
+}
+
+// Event listeners for control buttons
+prevBtn.addEventListener('click', skipToPrevious);
+playPauseBtn.addEventListener('click', togglePlayPause);
+nextBtn.addEventListener('click', skipToNext);
 
 // Start the app
 init();
