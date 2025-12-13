@@ -53,6 +53,32 @@ function base64encode(input) {
         .replace(/\//g, '_');
 }
 
+// Helper function to clear all auth tokens
+function clearAuthTokens() {
+    localStorage.removeItem('spotify_access_token');
+    localStorage.removeItem('spotify_refresh_token');
+    localStorage.removeItem('spotify_token_expiry');
+    accessToken = null;
+}
+
+// Helper function to store auth tokens
+function storeAuthTokens(accessToken, refreshToken, expiresIn = 3600) {
+    localStorage.setItem('spotify_access_token', accessToken);
+    
+    if (refreshToken) {
+        localStorage.setItem('spotify_refresh_token', refreshToken);
+    }
+    
+    const expiryTime = Date.now() + (expiresIn * 1000);
+    localStorage.setItem('spotify_token_expiry', expiryTime.toString());
+}
+
+// Helper function to add pulse animation to button
+function pulseButton(button) {
+    button.classList.add('pulse');
+    setTimeout(() => button.classList.remove('pulse'), 400);
+}
+
 // Refresh access token using refresh token
 async function refreshAccessToken() {
     const refreshToken = localStorage.getItem('spotify_refresh_token');
@@ -81,26 +107,12 @@ async function refreshAccessToken() {
         
         if (data.access_token) {
             accessToken = data.access_token;
-            localStorage.setItem('spotify_access_token', accessToken);
-            
-            // Update refresh token if a new one is provided
-            if (data.refresh_token) {
-                localStorage.setItem('spotify_refresh_token', data.refresh_token);
-            }
-            
-            // Update token expiry time
-            const expiresIn = data.expires_in || 3600;
-            const expiryTime = Date.now() + (expiresIn * 1000);
-            localStorage.setItem('spotify_token_expiry', expiryTime.toString());
-            
+            storeAuthTokens(accessToken, data.refresh_token, data.expires_in);
             console.log('Access token refreshed successfully');
             return true;
         } else {
             console.error('Failed to refresh token:', data);
-            // Clear all tokens if refresh fails
-            localStorage.removeItem('spotify_access_token');
-            localStorage.removeItem('spotify_refresh_token');
-            localStorage.removeItem('spotify_token_expiry');
+            clearAuthTokens();
             return false;
         }
     } catch (error) {
@@ -145,25 +157,13 @@ async function exchangeCodeForToken(code) {
         
         if (data.access_token) {
             accessToken = data.access_token;
-            localStorage.setItem('spotify_access_token', accessToken);
-            
-            // Store refresh token for automatic token renewal
-            if (data.refresh_token) {
-                localStorage.setItem('spotify_refresh_token', data.refresh_token);
-                console.log('Refresh token stored');
-            }
-            
-            // Store token expiry time
-            const expiresIn = data.expires_in || 3600; // Default 1 hour
-            const expiryTime = Date.now() + (expiresIn * 1000);
-            localStorage.setItem('spotify_token_expiry', expiryTime.toString());
-            
+            storeAuthTokens(accessToken, data.refresh_token, data.expires_in);
             localStorage.removeItem('code_verifier');
             console.log('Access token obtained successfully');
             return true;
         } else {
             console.error('Failed to get access token:', data);
-            localStorage.clear(); // Clear stale data to prevent loops
+            localStorage.clear();
             alert('Token exchange failed: ' + (data.error_description || data.error || 'Unknown error'));
             return false;
         }
@@ -350,10 +350,7 @@ async function getCurrentlyPlaying() {
             } else {
                 // Refresh failed - trigger reconnect
                 console.log('Token refresh failed, showing reconnect button...');
-                localStorage.removeItem('spotify_access_token');
-                localStorage.removeItem('spotify_refresh_token');
-                localStorage.removeItem('spotify_token_expiry');
-                accessToken = null;
+                clearAuthTokens();
                 stopPolling();
                 showLoginButton();
                 updateDisplay(null);
@@ -370,7 +367,7 @@ async function getCurrentlyPlaying() {
         const data = await response.json();
         
         if (data && data.item) {
-            updateDisplay(data.item, data.progress_ms, data.is_playing, data.context);
+            updateDisplay(data.item, data.progress_ms, data.is_playing);
         } else {
             updateDisplay(null);
         }
@@ -390,12 +387,11 @@ function handleNetworkError() {
     if (errorCount >= 3) {
         // After 3 consecutive errors, show reconnect button
         console.log('Multiple errors detected, requiring reconnect...');
-        localStorage.removeItem('spotify_access_token');
-        accessToken = null;
+        clearAuthTokens();
         stopPolling();
         showLoginButton();
         updateDisplay(null);
-        errorCount = 0; // Reset counter
+        errorCount = 0;
     }
 }
 
@@ -405,7 +401,7 @@ function resetErrorCount() {
 }
 
 // Update display with track information
-function updateDisplay(track, progress = 0, playing = false, context = null) {
+function updateDisplay(track, progress = 0, playing = false) {
     if (!track) {
         songTitle.textContent = 'Not Playing';
         artistName.textContent = 'No active playback';
@@ -427,8 +423,7 @@ function updateDisplay(track, progress = 0, playing = false, context = null) {
     // Detect external play/pause changes
     if (previousTrackId === track.id && previousIsPlaying !== playing) {
         // Same track, but playback state changed externally
-        playPauseBtn.classList.add('pulse');
-        setTimeout(() => playPauseBtn.classList.remove('pulse'), 400);
+        pulseButton(playPauseBtn);
     }
 
     // Update progress state
@@ -458,13 +453,11 @@ function updateDisplay(track, progress = 0, playing = false, context = null) {
             if (progress < 3000) {
                 // Less than 3 seconds into new track - likely skipped forward
                 skipDirection = 'next';
-                nextBtn.classList.add('pulse');
-                setTimeout(() => nextBtn.classList.remove('pulse'), 400);
+                pulseButton(nextBtn);
             } else {
                 // Further into track - could be previous or just started playing
                 skipDirection = 'prev';
-                prevBtn.classList.add('pulse');
-                setTimeout(() => prevBtn.classList.remove('pulse'), 400);
+                pulseButton(prevBtn);
             }
         }
         
@@ -551,16 +544,9 @@ async function skipToNext() {
         });
         
         if (response.ok || response.status === 204) {
-            // Add pulse animation
-            nextBtn.classList.add('pulse');
-            setTimeout(() => nextBtn.classList.remove('pulse'), 400);
-            
-            // Set skip direction and trigger slide animation
+            pulseButton(nextBtn);
             skipDirection = 'next';
-            const songInfo = document.querySelector('.song-info');
-            songInfo.classList.add('slide-out-left');
-            
-            // Immediately refresh to show new track
+            document.querySelector('.song-info').classList.add('slide-out-left');
             setTimeout(() => getCurrentlyPlaying(), 300);
         }
     } catch (error) {
@@ -580,16 +566,9 @@ async function skipToPrevious() {
         });
         
         if (response.ok || response.status === 204) {
-            // Add pulse animation
-            prevBtn.classList.add('pulse');
-            setTimeout(() => prevBtn.classList.remove('pulse'), 400);
-            
-            // Set skip direction and trigger slide animation
+            pulseButton(prevBtn);
             skipDirection = 'prev';
-            const songInfo = document.querySelector('.song-info');
-            songInfo.classList.add('slide-out-right');
-            
-            // Immediately refresh to show new track
+            document.querySelector('.song-info').classList.add('slide-out-right');
             setTimeout(() => getCurrentlyPlaying(), 300);
         }
     } catch (error) {
@@ -613,15 +592,9 @@ async function togglePlayPause() {
         });
         
         if (response.ok || response.status === 204) {
-            // Add pulse animation
-            playPauseBtn.classList.add('pulse');
-            setTimeout(() => playPauseBtn.classList.remove('pulse'), 400);
-            
-            // Toggle play state and icon
+            pulseButton(playPauseBtn);
             isPlaying = !isPlaying;
             updatePlayPauseIcon();
-            
-            // Immediately refresh
             setTimeout(() => getCurrentlyPlaying(), 300);
         }
     } catch (error) {
