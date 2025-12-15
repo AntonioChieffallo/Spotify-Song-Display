@@ -66,9 +66,23 @@ body {
     margin-bottom: 8px;
     white-space: nowrap;
     overflow: hidden;
-    text-overflow: ellipsis;
     color: #1DB954;
     max-width: 100%;
+    position: relative;
+}
+
+.song-title.scrolling {
+    overflow: visible;
+}
+
+.song-title.scrolling span {
+    display: inline-block;
+    padding-right: 40px;
+    animation: scroll-text 10s linear infinite;
+}
+
+.song-title span {
+    display: inline-block;
 }
 
 .artist-name {
@@ -76,9 +90,23 @@ body {
     color: #b3b3b3;
     white-space: nowrap;
     overflow: hidden;
-    text-overflow: ellipsis;
     margin-bottom: 12px;
     max-width: 100%;
+    position: relative;
+}
+
+.artist-name.scrolling {
+    overflow: visible;
+}
+
+.artist-name.scrolling span {
+    display: inline-block;
+    padding-right: 40px;
+    animation: scroll-text 10s linear infinite;
+}
+
+.artist-name span {
+    display: inline-block;
 }
 
 .progress-container {
@@ -274,4 +302,14 @@ body {
 
 .song-info.slide-in-left {
     animation: slideInLeft 0.3s ease forwards;
+}
+
+/* Scrolling text animation */
+@keyframes scroll-text {
+    0% {
+        transform: translateX(0);
+    }
+    100% {
+        transform: translateX(-50%);
+    }
 }

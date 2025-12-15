@@ -518,6 +518,12 @@ function updateDisplay(track, progress = 0, playing = false) {
             coverImage.src = imageUrl;
             coverImage.alt = `${track.album.name} cover`;
         }
+        
+        // Check for text overflow and apply scrolling if needed
+        setTimeout(() => {
+            checkTextOverflow(songTitle);
+            checkTextOverflow(artistName);
+        }, 50);
     }
 }
 
@@ -624,6 +630,26 @@ function updatePlayPauseIcon() {
     } else {
         playIcon.style.display = 'block';
         pauseIcon.style.display = 'none';
+    }
+}
+
+// Check if text overflows and apply scrolling effect
+function checkTextOverflow(element) {
+    // Reset any existing scrolling
+    element.classList.remove('scrolling');
+    const span = element.querySelector('span');
+    if (span) {
+        span.replaceWith(span.textContent);
+    }
+    
+    // Check if text overflows
+    const isOverflowing = element.scrollWidth > element.clientWidth;
+    
+    if (isOverflowing) {
+        // Wrap text in span and apply scrolling class
+        const text = element.textContent;
+        element.innerHTML = `<span>${text}${text}</span>`;
+        element.classList.add('scrolling');
     }
 }
 
