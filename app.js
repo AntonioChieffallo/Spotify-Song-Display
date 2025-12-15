@@ -635,20 +635,22 @@ function updatePlayPauseIcon() {
 
 // Check if text overflows and apply scrolling effect
 function checkTextOverflow(element) {
+    // Store original text
+    const originalText = element.textContent;
+    
     // Reset any existing scrolling
     element.classList.remove('scrolling');
-    const span = element.querySelector('span');
-    if (span) {
-        span.replaceWith(span.textContent);
-    }
+    element.innerHTML = originalText;
+    
+    // Force a reflow to ensure accurate measurements
+    element.offsetWidth;
     
     // Check if text overflows
     const isOverflowing = element.scrollWidth > element.clientWidth;
     
     if (isOverflowing) {
-        // Wrap text in span and apply scrolling class
-        const text = element.textContent;
-        element.innerHTML = `<span>${text}${text}</span>`;
+        // Wrap text in span and duplicate for seamless loop
+        element.innerHTML = `<span>${originalText} ${originalText}</span>`;
         element.classList.add('scrolling');
     }
 }
